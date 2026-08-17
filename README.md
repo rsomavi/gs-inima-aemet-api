@@ -1,0 +1,1 @@
+# gs-inima-aemet-api

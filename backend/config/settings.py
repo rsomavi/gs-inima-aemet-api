@@ -131,4 +131,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # AEMET OpenData API
 AEMET_API_KEY = os.environ.get('AEMET_API_KEY', '')
 
-AEMET_BASE_URL = 'https://opendata.aemet.es/opendata/api'git status
+AEMET_BASE_URL = 'https://opendata.aemet.es/opendata/api'

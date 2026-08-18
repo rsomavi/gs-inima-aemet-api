@@ -1,5 +1,7 @@
 """Tests for the AEMET API client."""
 
+import datetime
+
 from unittest.mock import Mock, patch
 
 from rest_framework.test import APITestCase
@@ -9,6 +11,10 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .aemet_client import AemetApiError, fetch_antarctica_observations
+
+from .cache import find_missing_ranges
+
+from .models import Measurement
 
 
 
@@ -92,3 +98,61 @@ class AntarcticaDataViewTests(APITestCase):
 
         self.assertEqual(response.status_code, 502)
         self.assertIn("error", response.data)
+
+class FindMissingRangesTests(TestCase):
+    """Tests for the gap-detection logic in the local cache."""
+
+    def setUp(self):
+        self.station = "89070"
+        self.base = datetime.datetime(2026, 1, 15, 0, 0, tzinfo=datetime.timezone.utc)
+
+    def _create_measurement(self, minutes_offset):
+        Measurement.objects.create(
+            station=self.station,
+            timestamp=self.base + datetime.timedelta(minutes=minutes_offset),
+            temperature=2.0,
+            pressure=983.0,
+            speed=3.0,
+        )
+
+    def test_returns_empty_list_when_fully_cached(self):
+        """No gaps are returned when every timestamp in the range is cached."""
+        for minutes in (0, 10, 20):
+            self._create_measurement(minutes)
+
+        gaps = find_missing_ranges(self.station, self.base, self.base + datetime.timedelta(minutes=20))
+
+        self.assertEqual(gaps, [])
+
+    def test_returns_single_gap_between_cached_edges(self):
+        """A contiguous gap between two cached edges is detected as one range."""
+        for minutes in (0, 10, 20, 60):
+            self._create_measurement(minutes)
+
+        gaps = find_missing_ranges(self.station, self.base, self.base + datetime.timedelta(minutes=60))
+
+        expected_gap = (
+            self.base + datetime.timedelta(minutes=30),
+            self.base + datetime.timedelta(minutes=50),
+        )
+        self.assertEqual(gaps, [expected_gap])
+
+    def test_returns_full_range_when_nothing_cached(self):
+        """The whole range is one gap when nothing has been cached yet."""
+        gaps = find_missing_ranges(self.station, self.base, self.base + datetime.timedelta(minutes=20))
+
+        expected_gap = (self.base, self.base + datetime.timedelta(minutes=20))
+        self.assertEqual(gaps, [expected_gap])
+
+    def test_returns_two_separate_gaps(self):
+        """Two non-adjacent gaps are returned as two separate ranges."""
+        # Cached: 00:10 only. Missing: 00:00 and 00:20-00:30 (two separate gaps).
+        self._create_measurement(10)
+
+        gaps = find_missing_ranges(self.station, self.base, self.base + datetime.timedelta(minutes=30))
+
+        expected_gaps = [
+            (self.base, self.base),
+            (self.base + datetime.timedelta(minutes=20), self.base + datetime.timedelta(minutes=30)),
+        ]
+        self.assertEqual(gaps, expected_gaps)

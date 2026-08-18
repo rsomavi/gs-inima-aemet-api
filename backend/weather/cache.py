@@ -10,7 +10,12 @@ import datetime
 
 from .models import Measurement
 
+from .aemet_client import fetch_antarctica_observations
+
 GRANULARITY = datetime.timedelta(minutes=10)
+
+AEMET_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
 
 
 def _expected_timestamps(start: datetime.datetime, end: datetime.datetime) -> list[datetime.datetime]:
@@ -65,3 +70,59 @@ def find_missing_ranges(
 
     gaps.append((chunk_start, previous))
     return gaps
+
+def _to_aemet_format(dt: datetime.datetime) -> str:
+    """Format a UTC datetime the way AEMET's API expects it."""
+    return dt.strftime(AEMET_DATETIME_FORMAT) + "UTC"
+
+
+def _store_observations(station: str, raw_observations: list[dict]) -> None:
+    """Upsert raw AEMET observations into the local cache.
+
+    Entries with a "NaN" value for a numeric field are stored as None,
+    since AEMET occasionally reports a broken sensor this way.
+    """
+    for obs in raw_observations:
+        timestamp = datetime.datetime.strptime(obs["fhora"], "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=datetime.timezone.utc
+        )
+        Measurement.objects.update_or_create(
+            station=station,
+            timestamp=timestamp,
+            defaults={
+                "temperature": _safe_float(obs.get("temp")),
+                "pressure": _safe_float(obs.get("pres")),
+                "speed": _safe_float(obs.get("vel")),
+            },
+        )
+
+
+def _safe_float(value) -> float | None:
+    """Convert an AEMET numeric field to float, treating "NaN" as missing."""
+    if value is None or value == "NaN":
+        return None
+    return float(value)
+
+
+def get_observations(
+    station: str, start: datetime.datetime, end: datetime.datetime
+) -> list[Measurement]:
+    """Return all cached observations for a station and range, fetching gaps first.
+
+    Any 10-minute timestamps missing from the local cache are fetched
+    from AEMET (grouped into as few requests as possible) and stored
+    before returning the combined result from the database.
+    """
+    gaps = find_missing_ranges(station, start, end)
+
+    for gap_start, gap_end in gaps:
+        raw_observations = fetch_antarctica_observations(
+            fecha_ini=_to_aemet_format(gap_start),
+            fecha_fin=_to_aemet_format(gap_end),
+            estacion=station,
+        )
+        _store_observations(station, raw_observations)
+
+    return list(
+        Measurement.objects.filter(station=station, timestamp__gte=start, timestamp__lte=end)
+    )

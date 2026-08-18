@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from .aemet_client import AemetApiError
 from .cache import get_observations
+from .models import VALID_STATIONS
 
 AEMET_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SUTC"
 
@@ -20,6 +21,17 @@ class AntarcticaDataView(APIView):
     """
 
     def get(self, request, fecha_ini_str, fecha_fin_str, identificacion):
+        if identificacion not in VALID_STATIONS:
+            return Response(
+                {
+                    "error": (
+                        f"Invalid station '{identificacion}'. "
+                        f"Valid options: {', '.join(VALID_STATIONS)}."
+                    )
+                },
+                status=400,
+            )
+        
         try:
             start = datetime.datetime.strptime(fecha_ini_str, AEMET_DATETIME_FORMAT).replace(
                 tzinfo=datetime.timezone.utc

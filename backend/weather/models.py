@@ -2,6 +2,10 @@
 
 from django.db import models
 
+VALID_STATIONS = {
+    "89070": "Meteo Station Gabriel de Castilla",
+    "89064": "Meteo Station Juan Carlos I",
+}
 
 class Measurement(models.Model):
     """A single 10-minute weather observation from an Antarctic station.

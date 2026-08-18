@@ -61,3 +61,9 @@ class AntarcticaDataViewTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.data)
+
+    def test_returns_400_for_invalid_station(self):
+        response = self.client.get(self._build_url(estacion="99999"))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.data)

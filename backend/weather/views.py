@@ -63,6 +63,11 @@ class AntarcticaDataView(APIView):
         start = start_naive.replace(tzinfo=input_tz).astimezone(datetime.timezone.utc)
         end = end_naive.replace(tzinfo=input_tz).astimezone(datetime.timezone.utc)
 
+        if start > end:
+            return Response(
+                {"error": "fechaini must not be after fechafin."}, status=400
+            )
+
         try:
             measurements = get_observations(identificacion, start, end)
         except AemetApiError as error:

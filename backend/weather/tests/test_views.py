@@ -156,3 +156,11 @@ class AntarcticaDataViewTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.data)
+
+    def test_returns_400_for_reversed_date_range(self):
+        response = self.client.get(
+            self._build_url(fecha_ini="2026-01-15T01:00:00", fecha_fin="2026-01-15T00:00:00")
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.data)

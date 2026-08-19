@@ -5,8 +5,13 @@ short-lived URL pointing to the actual data, which must be fetched
 with a second request.
 """
 
+import logging
+import time
+
 import requests
 from django.conf import settings
+
+logger = logging.getLogger("weather")
 
 
 class AemetApiError(Exception):
@@ -30,6 +35,11 @@ def fetch_antarctica_observations(fecha_ini: str, fecha_fin: str, estacion: str)
         AemetApiError: if AEMET returns an error or no data for the
             given parameters.
     """
+    logger.info(
+        "Fetching from AEMET: station=%s, range=%s to %s", estacion, fecha_ini, fecha_fin
+    )
+    start_time = time.monotonic()
+
     request_url = (
         f"{settings.AEMET_BASE_URL}/antartida/datos/"
         f"fechaini/{fecha_ini}/fechafin/{fecha_fin}/estacion/{estacion}"
@@ -43,6 +53,10 @@ def fetch_antarctica_observations(fecha_ini: str, fecha_fin: str, estacion: str)
     first_payload = first_response.json()
 
     if first_payload.get("estado") != 200:
+        logger.warning(
+            "AEMET returned no data for station=%s, range=%s to %s: %s",
+            estacion, fecha_ini, fecha_fin, first_payload.get("descripcion"),
+        )
         raise AemetApiError(
             f"AEMET request failed: {first_payload.get('descripcion', 'unknown error')}"
         )
@@ -52,4 +66,11 @@ def fetch_antarctica_observations(fecha_ini: str, fecha_fin: str, estacion: str)
     second_response = requests.get(data_url, timeout=10)
     second_response.raise_for_status()
 
-    return second_response.json()
+    observations = second_response.json()
+    duration = time.monotonic() - start_time
+    logger.info(
+        "AEMET fetch complete: station=%s, %d observations, %.2fs",
+        estacion, len(observations), duration,
+    )
+
+    return observations

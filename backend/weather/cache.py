@@ -7,10 +7,13 @@ genuinely missing.
 """
 
 import datetime
+import logging
 
 from .models import Measurement
 
 from .aemet_client import fetch_antarctica_observations
+
+logger = logging.getLogger("weather")
 
 GRANULARITY = datetime.timedelta(minutes=10)
 
@@ -115,6 +118,14 @@ def get_observations(
     """
     gaps = find_missing_ranges(station, start, end)
 
+    if not gaps:
+        logger.info("Cache hit: station=%s, range=%s to %s (no gaps)", station, start, end)
+    else:
+        logger.info(
+            "Cache miss: station=%s, range=%s to %s, %d gap(s) to fetch",
+            station, start, end, len(gaps),
+        )
+
     for gap_start, gap_end in gaps:
         raw_observations = fetch_antarctica_observations(
             fecha_ini=_to_aemet_format(gap_start),
@@ -123,6 +134,8 @@ def get_observations(
         )
         _store_observations(station, raw_observations)
 
-    return list(
+    result = list(
         Measurement.objects.filter(station=station, timestamp__gte=start, timestamp__lte=end)
     )
+    logger.info("Returning %d measurement(s) for station=%s", len(result), station)
+    return result

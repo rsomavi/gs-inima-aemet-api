@@ -22,3 +22,5 @@ dist/
 # Editor
 .vscode/
 .idea/
+
+backend/logs/*.log

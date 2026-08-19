@@ -164,3 +164,18 @@ class AntarcticaDataViewTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.data)
+
+    @patch("weather.views.get_observations")
+    def test_logs_incoming_request(self, mock_get_observations):
+        mock_get_observations.return_value = []
+
+        with self.assertLogs("weather", level="INFO") as logs:
+            self.client.get(self._build_url())
+
+        self.assertTrue(any("Request received" in message for message in logs.output))
+
+    def test_logs_rejected_invalid_station(self):
+        with self.assertLogs("weather", level="WARNING") as logs:
+            self.client.get(self._build_url(estacion="99999"))
+
+        self.assertTrue(any("Rejected" in message for message in logs.output))

@@ -10,16 +10,13 @@ from .aggregation import VALID_AGGREGATIONS, aggregate_measurements
 from .cache import get_observations
 from .models import VALID_STATIONS
 from .serializers import parse_requested_fields, serialize_measurement
+from .timezones import resolve_input_timezone
 
-AEMET_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SUTC"
+INPUT_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 
 class AntarcticaDataView(APIView):
-    """Returns cached AEMET observations for an Antarctic station and date range.
-
-    The location/offset parameter for interpreting input dates is
-    handled in a later iteration.
-    """
+    """Returns cached AEMET observations for an Antarctic station and date range."""
 
     def get(self, request, fecha_ini_str, fecha_fin_str, identificacion):
         if identificacion not in VALID_STATIONS:
@@ -51,16 +48,20 @@ class AntarcticaDataView(APIView):
             )
 
         try:
-            start = datetime.datetime.strptime(fecha_ini_str, AEMET_DATETIME_FORMAT).replace(
-                tzinfo=datetime.timezone.utc
-            )
-            end = datetime.datetime.strptime(fecha_fin_str, AEMET_DATETIME_FORMAT).replace(
-                tzinfo=datetime.timezone.utc
-            )
+            input_tz = resolve_input_timezone(request.query_params.get("location"))
+        except ValueError as error:
+            return Response({"error": str(error)}, status=400)
+
+        try:
+            start_naive = datetime.datetime.strptime(fecha_ini_str, INPUT_DATETIME_FORMAT)
+            end_naive = datetime.datetime.strptime(fecha_fin_str, INPUT_DATETIME_FORMAT)
         except ValueError:
             return Response(
-                {"error": "Dates must use the format AAAA-MM-DDTHH:MM:SSUTC."}, status=400
+                {"error": "Dates must use the format AAAA-MM-DDTHH:MM:SS."}, status=400
             )
+
+        start = start_naive.replace(tzinfo=input_tz).astimezone(datetime.timezone.utc)
+        end = end_naive.replace(tzinfo=input_tz).astimezone(datetime.timezone.utc)
 
         try:
             measurements = get_observations(identificacion, start, end)

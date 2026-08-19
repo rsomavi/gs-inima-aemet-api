@@ -13,7 +13,7 @@ from ..models import Measurement
 class AntarcticaDataViewTests(APITestCase):
     """Tests for the /api/antartida/datos/... endpoint."""
 
-    def _build_url(self, fecha_ini="2026-01-15T00:00:00UTC", fecha_fin="2026-01-15T01:00:00UTC", estacion="89070"):
+    def _build_url(self, fecha_ini="2026-01-15T00:00:00", fecha_fin="2026-01-15T01:00:00", estacion="89070"):
         return reverse(
             "antartida-datos",
             kwargs={
@@ -50,7 +50,7 @@ class AntarcticaDataViewTests(APITestCase):
         mock_get_observations.side_effect = AemetApiError("No hay datos que satisfagan esos criterios")
 
         response = self.client.get(
-            self._build_url(fecha_ini="2026-07-01T00:00:00UTC", fecha_fin="2026-07-02T00:00:00UTC")
+            self._build_url(fecha_ini="2026-07-01T00:00:00", fecha_fin="2026-07-02T00:00:00")
         )
 
         self.assertEqual(response.status_code, 502)

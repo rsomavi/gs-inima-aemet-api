@@ -5,7 +5,8 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from ..cache import find_missing_ranges, get_observations
+from ..cache import find_missing_ranges, get_observations, _split_into_chunks
+
 from ..models import Measurement
 
 
@@ -128,3 +129,42 @@ class GetObservationsTests(TestCase):
         result = get_observations(self.station, self.base, self.base)
 
         self.assertIsNone(result[0].temperature)
+
+class SplitIntoChunksTests(TestCase):
+    """Tests for splitting large ranges into AEMET-sized sub-ranges."""
+
+    def test_returns_single_chunk_when_range_within_limit(self):
+        start = datetime.datetime(2026, 1, 15, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2026, 1, 15, 1, 0, tzinfo=datetime.timezone.utc)
+
+        chunks = _split_into_chunks(start, end, max_days=30)
+
+        self.assertEqual(chunks, [(start, end)])
+
+    def test_splits_range_longer_than_max_days(self):
+        start = datetime.datetime(2026, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2026, 2, 15, 0, 0, tzinfo=datetime.timezone.utc)  # 45 days
+
+        chunks = _split_into_chunks(start, end, max_days=30)
+
+        self.assertEqual(len(chunks), 2)
+        self.assertEqual(chunks[0], (start, start + datetime.timedelta(days=30)))
+        self.assertEqual(chunks[1][1], end)
+
+    def test_chunks_do_not_overlap(self):
+        start = datetime.datetime(2026, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2026, 2, 15, 0, 0, tzinfo=datetime.timezone.utc)
+
+        chunks = _split_into_chunks(start, end, max_days=30)
+
+        for (_, first_end), (second_start, _) in zip(chunks, chunks[1:]):
+            self.assertEqual(second_start - first_end, datetime.timedelta(minutes=10))
+
+    def test_covers_the_entire_original_range(self):
+        start = datetime.datetime(2026, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2026, 3, 10, 0, 0, tzinfo=datetime.timezone.utc)  # ~68 days
+
+        chunks = _split_into_chunks(start, end, max_days=30)
+
+        self.assertEqual(chunks[0][0], start)
+        self.assertEqual(chunks[-1][1], end)

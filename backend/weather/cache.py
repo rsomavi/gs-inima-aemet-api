@@ -19,6 +19,8 @@ GRANULARITY = datetime.timedelta(minutes=10)
 
 AEMET_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
+MAX_AEMET_RANGE_DAYS = 30
+
 
 
 def _expected_timestamps(start: datetime.datetime, end: datetime.datetime) -> list[datetime.datetime]:
@@ -74,6 +76,29 @@ def find_missing_ranges(
     gaps.append((chunk_start, previous))
     return gaps
 
+
+def _split_into_chunks(
+    start: datetime.datetime, end: datetime.datetime, max_days: int = MAX_AEMET_RANGE_DAYS
+) -> list[tuple[datetime.datetime, datetime.datetime]]:
+    """Split a date range into sub-ranges no longer than max_days.
+
+    AEMET's API rejects requests spanning more than ~1 month, so any
+    gap larger than that must be fetched in multiple smaller requests.
+    A gap already within the limit is returned unchanged, as a single
+    chunk.
+    """
+    max_span = datetime.timedelta(days=max_days)
+    chunks = []
+    chunk_start = start
+
+    while chunk_start <= end:
+        chunk_end = min(chunk_start + max_span, end)
+        chunks.append((chunk_start, chunk_end))
+        chunk_start = chunk_end + GRANULARITY
+
+    return chunks
+
+
 def _to_aemet_format(dt: datetime.datetime) -> str:
     """Format a UTC datetime the way AEMET's API expects it."""
     return dt.strftime(AEMET_DATETIME_FORMAT) + "UTC"
@@ -113,8 +138,9 @@ def get_observations(
     """Return all cached observations for a station and range, fetching gaps first.
 
     Any 10-minute timestamps missing from the local cache are fetched
-    from AEMET (grouped into as few requests as possible) and stored
-    before returning the combined result from the database.
+    from AEMET (grouped into as few requests as possible, and split
+    into sub-1-month chunks since AEMET rejects longer ranges) and
+    stored before returning the combined result from the database.
     """
     gaps = find_missing_ranges(station, start, end)
 
@@ -127,12 +153,13 @@ def get_observations(
         )
 
     for gap_start, gap_end in gaps:
-        raw_observations = fetch_antarctica_observations(
-            fecha_ini=_to_aemet_format(gap_start),
-            fecha_fin=_to_aemet_format(gap_end),
-            estacion=station,
-        )
-        _store_observations(station, raw_observations)
+        for chunk_start, chunk_end in _split_into_chunks(gap_start, gap_end):
+            raw_observations = fetch_antarctica_observations(
+                fecha_ini=_to_aemet_format(chunk_start),
+                fecha_fin=_to_aemet_format(chunk_end),
+                estacion=station,
+            )
+            _store_observations(station, raw_observations)
 
     result = list(
         Measurement.objects.filter(station=station, timestamp__gte=start, timestamp__lte=end)

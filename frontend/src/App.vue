@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import QueryForm from './components/QueryForm.vue'
 import ResultsTable from './components/ResultsTable.vue'
+import ResultsChart from './components/ResultsChart.vue'
 import { fetchAntarcticaData, type QueryParams } from './api'
 import type { Measurement } from './types'
 
@@ -32,6 +33,9 @@ async function handleQuery(params: QueryParams) {
     <p v-if="isLoading">Loading...</p>
     <p v-else-if="errorMessage" style="color: red">{{ errorMessage }}</p>
     <p v-else-if="results && results.length === 0">No data found for this query.</p>
-    <ResultsTable v-else-if="results && results.length > 0" :results="results" />
+    <template v-else-if="results && results.length > 0">
+      <ResultsChart :results="results" />
+      <ResultsTable :results="results" />
+    </template>
   </main>
 </template>

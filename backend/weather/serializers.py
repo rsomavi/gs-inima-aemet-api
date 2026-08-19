@@ -41,12 +41,15 @@ def parse_requested_fields(fields_param: str | None) -> tuple[str, ...]:
     return requested
 
 
-def serialize_measurement(measurement, fields: tuple[str, ...]) -> dict:
-    """Build the output dict for one measurement, using only the requested fields.
+def _round(value: float | None, decimals: int = 2) -> float | None:
+    """Round a numeric value for display, leaving None untouched."""
+    if value is None:
+        return None
+    return round(value, decimals)
 
-    The Datetime field is converted from UTC (as stored) to Europe/Madrid
-    (CET/CEST), including the UTC offset, as required by the spec.
-    """
+
+def serialize_measurement(measurement, fields: tuple[str, ...]) -> dict:
+    """Build the output dict for one measurement, using only the requested fields."""
     madrid_datetime = measurement.timestamp.astimezone(MADRID_TZ)
 
     result = {
@@ -54,9 +57,9 @@ def serialize_measurement(measurement, fields: tuple[str, ...]) -> dict:
         "Datetime": madrid_datetime.isoformat(),
     }
     field_values = {
-        "temperature": measurement.temperature,
-        "pressure": measurement.pressure,
-        "speed": measurement.speed,
+        "temperature": _round(measurement.temperature),
+        "pressure": _round(measurement.pressure),
+        "speed": _round(measurement.speed),
     }
     for field in fields:
         result[FIELD_TO_OUTPUT_NAME[field]] = field_values[field]

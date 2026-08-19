@@ -107,3 +107,35 @@ class AntarcticaDataViewTests(APITestCase):
         self.assertIn("Temperature (ºC)", response.data[0])
         self.assertIn("Pressure (hpa)", response.data[0])
         self.assertIn("Speed (m/s)", response.data[0])
+
+    @patch("weather.views.get_observations")
+    def test_aggregates_response_when_requested(self, mock_get_observations):
+        base = datetime.datetime(2026, 1, 15, 0, 0, tzinfo=datetime.timezone.utc)
+        mock_get_observations.return_value = [
+            Measurement(
+                station="89070",
+                timestamp=base,
+                temperature=2.0,
+                pressure=983.0,
+                speed=3.0,
+            ),
+            Measurement(
+                station="89070",
+                timestamp=base + datetime.timedelta(minutes=30),
+                temperature=4.0,
+                pressure=983.0,
+                speed=3.0,
+            ),
+        ]
+
+        response = self.client.get(self._build_url() + "?aggregation=hourly")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["Temperature (ºC)"], 3.0)
+
+    def test_returns_400_for_invalid_aggregation(self):
+        response = self.client.get(self._build_url() + "?aggregation=yearly")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.data)

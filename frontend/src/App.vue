@@ -27,15 +27,30 @@ async function handleQuery(params: QueryParams) {
 
 <template>
   <main>
-    <h1>Antarctica Weather Data</h1>
-    <QueryForm @query="handleQuery" />
+    <header class="page-header">
+      <h1>Antarctica Weather Data</h1>
+      <p>Historical measurements from AEMET's Antarctic weather stations.</p>
+    </header>
 
-    <p v-if="isLoading">Loading...</p>
-    <p v-else-if="errorMessage" style="color: red">{{ errorMessage }}</p>
-    <p v-else-if="results && results.length === 0">No data found for this query.</p>
+    <div class="card">
+      <h2>Query</h2>
+      <QueryForm @query="handleQuery" />
+    </div>
+
+    <p v-if="isLoading" class="status-message loading">Loading data…</p>
+    <p v-else-if="errorMessage" class="status-message error">{{ errorMessage }}</p>
+    <p v-else-if="results && results.length === 0" class="status-message empty">
+      No data found for this query.
+    </p>
     <template v-else-if="results && results.length > 0">
-      <ResultsChart :results="results" />
-      <ResultsTable :results="results" />
+      <div class="card">
+        <h2>Chart</h2>
+        <ResultsChart :results="results" />
+      </div>
+      <div class="card">
+        <h2>Results</h2>
+        <ResultsTable :results="results" />
+      </div>
     </template>
   </main>
 </template>

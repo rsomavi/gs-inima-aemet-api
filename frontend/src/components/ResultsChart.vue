@@ -59,3 +59,9 @@ onUnmounted(() => chartInstance?.destroy())
 <template>
   <canvas ref="canvasRef"></canvas>
 </template>
+
+<style scoped>
+canvas {
+  max-height: 380px;
+}
+</style>

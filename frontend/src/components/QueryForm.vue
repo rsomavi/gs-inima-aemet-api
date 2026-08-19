@@ -102,3 +102,76 @@ function handleSubmit() {
     <button type="submit">Query</button>
   </form>
 </template>
+
+<style scoped>
+form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+input,
+select {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+fieldset {
+  grid-column: 1 / -1;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+}
+
+legend {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  padding: 0 0.4rem;
+}
+
+fieldset label {
+  flex-direction: row;
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-right: 1.75rem;
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 0.65rem 1.75rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+button:hover {
+  background: var(--color-primary-hover);
+}
+</style>

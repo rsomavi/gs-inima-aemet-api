@@ -139,3 +139,20 @@ class AntarcticaDataViewTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.data)
+
+    @patch("weather.views.get_observations")
+    def test_interprets_dates_using_named_location(self, mock_get_observations):
+        mock_get_observations.return_value = []
+
+        # 10:00 in Berlin (CET, +1h in January) is 09:00 UTC.
+        self.client.get(self._build_url() + "?location=Europe/Berlin")
+
+        mock_get_observations.assert_called_once()
+        called_start = mock_get_observations.call_args[0][1]
+        self.assertEqual(called_start, datetime.datetime(2026, 1, 14, 23, 0, tzinfo=datetime.timezone.utc))
+
+    def test_returns_400_for_unknown_location(self):
+        response = self.client.get(self._build_url() + "?location=Europe/Atlantida")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.data)

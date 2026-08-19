@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import QueryForm from './components/QueryForm.vue'
+import ResultsTable from './components/ResultsTable.vue'
 import { fetchAntarcticaData, type QueryParams } from './api'
 import type { Measurement } from './types'
 
@@ -31,6 +32,6 @@ async function handleQuery(params: QueryParams) {
     <p v-if="isLoading">Loading...</p>
     <p v-else-if="errorMessage" style="color: red">{{ errorMessage }}</p>
     <p v-else-if="results && results.length === 0">No data found for this query.</p>
-    <pre v-else-if="results">{{ results }}</pre>
+    <ResultsTable v-else-if="results && results.length > 0" :results="results" />
   </main>
 </template>

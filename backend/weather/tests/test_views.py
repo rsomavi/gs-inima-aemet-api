@@ -38,7 +38,7 @@ class AntarcticaDataViewTests(APITestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["temp"], 2.2)
+        self.assertEqual(response.data[0]["Temperature (ºC)"], 2.2)
         mock_get_observations.assert_called_once_with(
             "89070",
             datetime.datetime(2026, 1, 15, 0, 0, tzinfo=datetime.timezone.utc),
@@ -67,3 +67,43 @@ class AntarcticaDataViewTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.data)
+
+    @patch("weather.views.get_observations")
+    def test_filters_response_to_requested_fields(self, mock_get_observations):
+        measurement = Measurement(
+            station="89070",
+            timestamp=datetime.datetime(2026, 1, 15, 0, 0, tzinfo=datetime.timezone.utc),
+            temperature=2.2,
+            pressure=983.3,
+            speed=3.8,
+        )
+        mock_get_observations.return_value = [measurement]
+
+        response = self.client.get(self._build_url() + "?fields=temperature")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Temperature (ºC)", response.data[0])
+        self.assertNotIn("Pressure (hpa)", response.data[0])
+
+    def test_returns_400_for_invalid_field(self):
+        response = self.client.get(self._build_url() + "?fields=humidity")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.data)
+
+    @patch("weather.views.get_observations")
+    def test_returns_all_fields_when_no_fields_param(self, mock_get_observations):
+        measurement = Measurement(
+            station="89070",
+            timestamp=datetime.datetime(2026, 1, 15, 0, 0, tzinfo=datetime.timezone.utc),
+            temperature=2.2,
+            pressure=983.3,
+            speed=3.8,
+        )
+        mock_get_observations.return_value = [measurement]
+
+        response = self.client.get(self._build_url())
+
+        self.assertIn("Temperature (ºC)", response.data[0])
+        self.assertIn("Pressure (hpa)", response.data[0])
+        self.assertIn("Speed (m/s)", response.data[0])

@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from .aemet_client import AemetApiError
 from .cache import get_observations
 from .models import VALID_STATIONS
+from .serializers import parse_requested_fields, serialize_measurement
 
 AEMET_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SUTC"
 
@@ -15,9 +16,8 @@ AEMET_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SUTC"
 class AntarcticaDataView(APIView):
     """Returns cached AEMET observations for an Antarctic station and date range.
 
-    Missing data is fetched from AEMET on demand and stored locally.
-    Filtering by variable, aggregation, and timezone conversion to
-    Europe/Madrid are handled in a later iteration.
+    Aggregation and timezone conversion to Europe/Madrid are handled
+    in a later iteration.
     """
 
     def get(self, request, fecha_ini_str, fecha_fin_str, identificacion):
@@ -31,7 +31,12 @@ class AntarcticaDataView(APIView):
                 },
                 status=400,
             )
-        
+
+        try:
+            fields = parse_requested_fields(request.query_params.get("fields"))
+        except ValueError as error:
+            return Response({"error": str(error)}, status=400)
+
         try:
             start = datetime.datetime.strptime(fecha_ini_str, AEMET_DATETIME_FORMAT).replace(
                 tzinfo=datetime.timezone.utc
@@ -49,14 +54,5 @@ class AntarcticaDataView(APIView):
         except AemetApiError as error:
             return Response({"error": str(error)}, status=502)
 
-        data = [
-            {
-                "station": measurement.station,
-                "fhora": measurement.timestamp.isoformat(),
-                "temp": measurement.temperature,
-                "pres": measurement.pressure,
-                "vel": measurement.speed,
-            }
-            for measurement in measurements
-        ]
+        data = [serialize_measurement(m, fields) for m in measurements]
         return Response(data)

@@ -168,4 +168,5 @@ LOGGING = {
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
+    'https://gs-inima-aemet-api-frontend.onrender.com',
 ]

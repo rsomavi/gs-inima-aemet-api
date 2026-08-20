@@ -11,6 +11,7 @@ const fechaIni = ref('2026-01-15T00:00')
 const fechaFin = ref('2026-01-15T01:00')
 const estacion = ref<StationCode>('89070')
 const aggregation = ref<AggregationLevel>('none')
+const location = ref('')
 const selectedFields = ref<Set<FieldName>>(new Set())
 
 function toggleField(field: FieldName) {
@@ -28,6 +29,7 @@ function handleSubmit() {
     estacion: estacion.value,
     aggregation: aggregation.value,
     fields: Array.from(selectedFields.value),
+    location: location.value || undefined,
   })
 }
 </script>
@@ -68,6 +70,13 @@ function handleSubmit() {
           <option value="daily">Daily</option>
           <option value="monthly">Monthly</option>
         </select>
+      </label>
+    </div>
+
+    <div>
+      <label>
+        Location (optional)
+        <input v-model="location" type="text" placeholder="e.g. Europe/Berlin or +02:00" />
       </label>
     </div>
 

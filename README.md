@@ -4,10 +4,10 @@ A web service that retrieves, caches, and serves historical weather data from AE
 
 ## Live demo
 
-- **Frontend:** _pending deployment_
-- **Backend API:** _pending deployment_
+- **Frontend:** https://gs-inima-aemet-api-frontend.onrender.com
+- **Backend API:** https://gs-inima-aemet-api.onrender.com/api
 
-> Deployment is optional for this challenge; instructions to run everything locally are below.
+> Note: both are on Render's free tier. The backend spins down after inactivity (first request after idling can take up to ~50s to respond), and its SQLite cache resets on every redeploy/restart (see [`docs/known-limitations.md`](docs/known-limitations.md)).
 
 ## What this does
 

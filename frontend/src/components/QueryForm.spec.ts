@@ -9,7 +9,7 @@ describe('QueryForm', () => {
     await wrapper.find('form').trigger('submit.prevent')
 
     expect(wrapper.emitted('query')).toBeTruthy()
-    const emittedParams = wrapper.emitted('query')![0][0] as { estacion: string; fields: string[] }
+    const emittedParams = wrapper.emitted('query')![0]![0] as { estacion: string; fields: string[] }
     expect(emittedParams.estacion).toBe('89070')
     expect(emittedParams.fields).toEqual([])
   })
@@ -20,7 +20,7 @@ describe('QueryForm', () => {
     await wrapper.find('input[type="checkbox"]').setValue(true)
     await wrapper.find('form').trigger('submit.prevent')
 
-    const emittedParams = wrapper.emitted('query')![0][0] as { fields: string[] }
+    const emittedParams = wrapper.emitted('query')![0]![0] as { fields: string[] }
     expect(emittedParams.fields).toContain('temperature')
   })
 })

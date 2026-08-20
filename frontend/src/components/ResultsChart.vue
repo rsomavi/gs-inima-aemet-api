@@ -21,7 +21,7 @@ function buildChart() {
 
   const labels = props.results.map((row) => row.Datetime)
 
-  const presentVariables = VARIABLE_CONFIG.filter((v) => v.key in props.results[0])
+  const presentVariables = VARIABLE_CONFIG.filter((v) => v.key in props.results[0]!)
 
   const datasets = presentVariables.map((variable) => ({
     label: variable.key,

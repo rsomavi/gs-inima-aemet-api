@@ -39,7 +39,7 @@ describe('fetchAntarcticaData', () => {
       aggregation: 'daily',
     })
 
-    const calledUrl = fetchMock.mock.calls[0][0] as string
+    const calledUrl = fetchMock.mock.calls[0]![0] as string
     expect(calledUrl).toContain('fields=temperature%2Cspeed')
     expect(calledUrl).toContain('aggregation=daily')
   })

@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const columns = computed(() => {
   if (props.results.length === 0) return []
-  return Object.keys(props.results[0])
+  return Object.keys(props.results[0]!)
 })
 </script>
 

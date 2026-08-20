@@ -80,6 +80,7 @@ Detailed design decisions and reasoning live in [`docs/`](docs/):
 - [`docs/timezone-handling.md`](docs/timezone-handling.md) — UTC storage, Europe/Madrid output, DST behavior, the `location` parameter
 - [`docs/caching-strategy.md`](docs/caching-strategy.md) — gap detection, upsert, why SQLite as-is
 - [`docs/aggregation.md`](docs/aggregation.md) — hourly/daily/monthly aggregation and the Madrid-calendar-day rule
+- [`docs/testing.md`](docs/testing.md) — the three-layer test strategy (unit tests, local adversarial smoke tests, live-AEMET smoke tests) and the real bug the adversarial tests found
 - [`docs/known-limitations.md`](docs/known-limitations.md) — things intentionally left out or worth knowing about, including AEMET's ~1-month range limit and how it was discovered and handled
 
 ## Project structure
